@@ -1,0 +1,342 @@
+/* Declare root variables */
+:root {
+    /* Colors optimized for color-blind individuals, according to Bang Wong */
+    --black:         rgba(   0,   0,   0, 1.0 );
+    --orange:        rgba( 230, 159,   0, 1.0 );
+    --skyBlue:       rgba(  86, 180, 233, 1.0 );
+    --bluishGreen:   rgba(   0, 158, 115, 1.0 );
+    --yellow:        rgba( 240, 228,  66, 1.0 );
+    --blue:          rgba(   0, 114, 178, 1.0 );
+    --vermillion:    rgba( 213,  94,   0, 1.0 );
+    --reddishPurple: rgba( 204, 121, 167, 1.0 );
+    --silver:        rgba( 192, 192, 192, 1.0 );
+    --white:         rgba( 255, 255, 255, 0.9 );
+
+    /* Main variable */
+    --w: 36px;  /* width of each rectangle, default=24 */
+    --h: calc( var(--w)*1.1547 ); /* height of each rectangle = width*sqrt(3)*2/3 */
+    --l: calc( var(--w)*0.5773 ); /* length of each side of the hexagon = width*sqrt(3)/3 */
+    --m: calc( var(--w)*0.077 ); /* margin of each rectangle = length - width/2 */
+    /*--b: calc( var(--w)*0.2 ); /* border-width of each rectangle */
+}
+
+/* Style a selection box that is used to select pieces */
+.is-body {
+    background: black;
+    font-family: Arial;
+}
+
+/* Style a selection box that is used to select pieces */
+.is-selection-box {
+    position: absolute;
+    z-index: 1090;
+    border: calc( var(--m)*1.5 ) dashed var(--yellow);
+    visibility: hidden;
+}
+
+/* Style an hexagonal board with rows and cells */
+.is-board { /* set some constants */
+    display: grid;
+    justify-content: center;
+}
+.is-row {
+    display: flex;
+}
+.is-row:nth-child(odd) {
+    padding-left: calc( var(--w)*0.5 + var(--m) ); /* this padding avoids overlap between two consecutive rows of the hexagonal grid */
+}
+.is-cell { /* clips an hexagon inside a rectangular .is-cell */
+    display: inline-grid;
+    width: var(--w); /* width of this rectangle */
+    height: var(--h); /* height of this rectangle */
+    margin: var(--m); /* margin of this rectangle */
+    clip-path: polygon( 0% 25%, 0% 75%, 50% 100%, 100% 75%, 100% 25%, 50% 0% ); /* clip this rectangle to form an hexagon */
+    margin-bottom: calc( var(--m) - var(--w)*0.2886 ); /* this negative margin creates overlap between two consecutive rows of the board = margin - width*sqrt(3)/6 */
+    transition: 0.35s ease;
+
+    /* INPUT BUTTON STYLE */
+    align-items: center;
+    background: var(--silver);
+    box-sizing: border-box;
+    color: rgba( 16, 16, 16, 0.3 );
+    cursor: default;
+    font-family: Arial;
+    font-size: calc( var(--w)/3 );
+    text-align: center;
+    user-select: none;
+}
+
+/* Style the background with a fog of war */
+.is-row > label.is-internal:nth-child(even) > .is-cell:not(.is-visible) {
+    background: rgba(  48,  48,  48, 1.0 );
+}
+.is-row > label.is-internal:nth-child(odd) > .is-cell:not(.is-visible) {
+    background: rgba(  64,  64,  64, 1.0 );
+}
+
+/* Dim the fog of war when the cell has been visited */
+.is-row > label.is-internal:nth-child(even) > .is-cell.was-visited:not(.is-visible) {
+    background: rgba( 105, 105, 105, 1.0 );
+}
+.is-row > label.is-internal:nth-child(odd) > .is-cell.was-visited:not(.is-visible) {
+    background: rgba( 120, 120, 120, 1.0 );
+}
+
+/* Highlight the cells that are currently visible */
+.is-cell.is-visible {
+    background: var(--white);
+}
+
+/* Make some cells invisible */
+.is-external {
+    visibility: hidden;
+}
+.is-hole > .is-cell {
+    background: var(--black);
+}
+.is-xen {
+    background: var(--bluishGreen);
+}
+
+/* Style the elements with a step */
+.is-step-north, .is-step-east, .is-step-south-east, .is-step-south, .is-step-south-west, .is-step-west, .is-step-north-west, .is-step-north-east {
+    position: absolute;
+    z-index: 2;
+    background: var(--yellow);
+    opacity: 100%;
+    width: calc( var(--l)*2 );
+    height: calc( var(--l)*2 );
+    margin-top: var(--m);
+}
+.is-step-north {
+    clip-path: polygon( 50% 0%, 80% 25%, 20% 25% );
+}
+.is-step-east {
+    clip-path: polygon( 100% 50%, 75% 80%, 75% 20% );
+}
+.is-step-south-east {
+    clip-path: polygon( 75% 93.3012%, 36.5192% 86.6506%, 88.48076% 56.6506% ); /* FORMULA: (50%, 50%) + rotation_matrix * (x-50%, y-50%) */
+}
+.is-step-south {
+    clip-path: polygon( 50% 100%, 20% 75%, 80% 75% );
+}
+.is-step-south-west {
+    clip-path: polygon( 25% 93.3012%, 11.5192% 56.6506%, 63.4807% 86.6506% );
+}
+.is-step-west {
+    clip-path: polygon( 0% 50%, 25% 20%, 25% 80% );
+}
+.is-step-north-west {
+    clip-path: polygon( 25% 6.6987%, 63.4807% 13.3493%, 11.5192% 43.3493% );
+}
+.is-step-north-east {
+    clip-path: polygon( 75% 6.6987%, 88.4807% 43.3493%, 36.5192% 13.3493% );
+}
+.is-step-rotating-animation {
+    transition: 0.35s ease;
+}
+
+/* Style the elements with a piece */
+.is-piece {
+    cursor: pointer;
+    line-height: var(--h);
+    /*text-decoration: underline;*/
+    position: absolute;
+    z-index: 1;
+    background: var(--bluishGreen);
+    width: calc( var(--l)*2 );
+    height: calc( var(--l)*2 );
+    margin-top: var(--m);
+    clip-path: circle();
+    transform: scale( 0.8660 ); /* sqrt(3)/2 */
+    animation: breath-animation 30s infinite;
+
+    /* INPUT BUTTON STYLE */
+    color: var(--black);
+    font-family: Arial;
+    font-size: calc( var(--w)/2.5 );
+    text-align: center;
+    user-select: none;
+}
+
+/* Style the friendly pieces */
+.is-piece.is-friendly, .is-piece.is-friendly.is-selected + .is-cell {
+    background: var(--skyBlue);
+}
+.is-piece.is-friendly.is-selected {
+    background: var(--blue);
+    color: var(--white);
+}
+
+/* Style the hostile pieces */
+.is-piece.is-hostile, .is-piece.is-hostile.is-targeted + .is-cell {
+    background: var(--orange);
+}
+.is-piece.is-hostile.is-targeted {
+    background: var(--vermillion);
+    color: var(--white);
+}
+.is-blue {
+    background: var(--blue) !important;
+}
+.is-red {
+    background: var(--vermillion) !important;
+}
+.is-green {
+    background: var(--bluishGreen) !important;
+}
+
+/* Set the behaviour of the border cells */
+.is-border > .is-cell, .is-border > .is-piece {
+    filter: brightness( 50% );
+}
+.is-border > .is-cell:not(.is-visible) {
+    background: var(--black);
+    color: var(--black);
+}
+.is-border > .is-cell.is-visible, .is-border > .is-cell:hover {
+    background: var(--reddishPurple);
+    color: var(--white);
+}
+
+/* Set the behaviour of hovered cells */
+.is-cell:hover, .is-piece:hover {
+    filter: brightness( 125% );
+    color: var(--white);
+}
+.is-cell.is-visible:hover {
+    color: var(--black);
+}
+
+/* Use the following to translate the pieces and the steps */
+.translate-east {
+    animation: translate-east-animation 0.35s;
+}
+.translate-south-east {
+    animation: translate-south-east-animation 0.35s;
+}
+.translate-south-west {
+    animation: translate-south-west-animation 0.35s;
+}
+.translate-west {
+    animation: translate-west-animation 0.35s;
+}
+.translate-north-west {
+    animation: translate-north-west-animation 0.35s;
+}
+.translate-north-east {
+    animation: translate-north-east-animation 0.35s;
+}
+@keyframes translate-east-animation {
+    0% {
+        transform: translate( calc(var(--l)*-2), 0px );
+    }
+    100% {}
+}
+@keyframes translate-south-east-animation {
+    0% {
+        transform: translate( calc(var(--l)*-1), calc(var(--w)*-1.020) );
+    }
+    100% {}
+}
+@keyframes translate-south-west-animation {
+    0% {
+        transform: translate( var(--l), calc(var(--w)*-1.020) );
+    }
+    100% {}
+}
+@keyframes translate-west-animation {
+    0% {
+        transform: translate( calc(var(--l)*2), 0px );
+    }
+    100% {}
+}
+@keyframes translate-north-west-animation {
+    0% {
+        transform: translate( var(--l), calc(var(--w)*1.020) ); /* vertical shift = width*(-1+7*sqrt(3)/6) */
+    }
+    100% {}
+}
+@keyframes translate-north-east-animation {
+    0% {
+        transform: translate( calc(var(--l)*-1), calc(var(--w)*1.020) );
+    }
+    100% {}
+}
+
+/* Define the denied and the contested animations */
+.was-denied {
+    animation: was-denied-animation 1s;
+}
+@keyframes was-denied-animation {
+    0% {}
+    50% {
+        background: var(--white);
+        color: var(--black);
+    }
+    100% {}
+}
+.was-contested {
+    animation: was-contested-animation 1s;
+}
+@keyframes was-contested-animation {
+    0% {}
+    50% {
+        background: var(--yellow);
+        color: var(--black);
+    }
+    100% {}
+}
+
+/* Define the converted animations */
+.was-converted {
+    animation: was-converted-animation 1s;
+}
+@keyframes was-converted-animation {
+    0% {
+        background: initial;
+        color: initial;
+    }
+    20% {
+        background: var(--reddishPurple);
+        color: var(--white);
+    }
+    40% {
+        background: initial;
+        color: initial;
+    }
+    60% {
+        background: var(--reddishPurple);
+        color: var(--white);
+    }
+    80% {
+        background: initial;
+        color: initial;
+    }
+    100% {}
+}
+
+/* Breath animation, only visible on pause */
+@keyframes breath-animation {
+    0% {
+        transform: scale( 0.8660 );
+    }
+    10% {
+        transform: scale( 0.8660 );
+    }
+    30% {
+        transform: scale( 0.75 );
+    }
+    50% {
+        transform: scale( 0.8660 );
+    }
+    60% {
+        transform: scale( 0.8660 );
+    }
+    80% {
+        transform: scale( 1 );
+    }
+    100% {
+        transform: scale( 0.8660 );
+    }
+}
